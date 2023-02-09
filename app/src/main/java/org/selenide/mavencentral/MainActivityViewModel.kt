@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -22,35 +21,46 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
   }
 
   private val _showLoginButton: MutableStateFlow<Boolean> = MutableStateFlow(false)
+  private val _showRefreshButton: MutableStateFlow<Boolean> = MutableStateFlow(false)
+  private val _showLoadingInProgress: MutableStateFlow<Boolean> = MutableStateFlow(false)
   private val _downloads: MutableStateFlow<Timeline?> = MutableStateFlow(null)
   private val _uniqueIPs: MutableStateFlow<Timeline?> = MutableStateFlow(null)
   private val _loadingError: MutableStateFlow<Exception?> = MutableStateFlow(null)
   private val repository by lazy { CredentialsRepository(application.applicationContext) }
 
   val showLoginButton: StateFlow<Boolean> = _showLoginButton
+  val showRefreshButton: StateFlow<Boolean> = _showRefreshButton
+  val showLoadingInProgress: StateFlow<Boolean> = _showLoadingInProgress
   val downloads: StateFlow<Timeline?> = _downloads
   val uniqueIPs: StateFlow<Timeline?> = _uniqueIPs
   val loadingError: StateFlow<Exception?> = _loadingError
 
   fun init() {
-    viewModelScope.launch {
-      setLoadingError(null)
+    refresh()
+  }
+  fun refresh() {
+    _loadingError.value = null
+    _showLoginButton.value = false
+    _showRefreshButton.value = false
+    _showLoadingInProgress.value = true
 
+    viewModelScope.launch {
       val credentials = readCredentials()
       if (credentials == null) {
         Log.i("MainActivity", "No credentials :(")
         _showLoginButton.value = true
+        _showLoadingInProgress.value = false
       } else {
         Log.i(
           "MainActivity",
           "Check statistics for '" + credentials.username + "' in thread '" + Thread.currentThread().name + "'"
         )
-        _showLoginButton.value = false
 
         try {
           val (downloads, uniqueIPs) = checkStatistics(credentials)
           _downloads.value = downloads
           _uniqueIPs.value = uniqueIPs
+          _showRefreshButton.value = true
         } catch (e: InvalidCredentials) {
           Log.e("MainActivity", "Failed to check statistics: $e")
           _loadingError.value = e
@@ -58,14 +68,13 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
         } catch (e: Exception) {
           Log.e("MainActivity", "Failed to check statistics", e)
           _loadingError.value = e
+          _showRefreshButton.value = true
         }
-
+        finally {
+          _showLoadingInProgress.value = false
+        }
       }
     }
-  }
-
-  private suspend fun setLoadingError(error: Exception?) = withContext(Main) {
-    _loadingError.value = error
   }
 
   private suspend fun readCredentials() = withContext(IO) {

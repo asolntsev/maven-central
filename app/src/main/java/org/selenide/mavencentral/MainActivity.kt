@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color.Companion.Blue
 import androidx.compose.ui.graphics.Color.Companion.Red
 import androidx.compose.ui.tooling.preview.Preview
 import org.nexus.Timeline
@@ -42,16 +43,28 @@ class MainActivity : ComponentActivity() {
   @Composable
   private fun MainView() {
     val showLoginButton by model.showLoginButton.collectAsState()
+    val showRefreshButton by model.showRefreshButton.collectAsState()
+    val showLoadingInProgress by model.showLoadingInProgress.collectAsState()
     val downloads by model.downloads.collectAsState()
     val uniqueIPs by model.uniqueIPs.collectAsState()
     val loadingError by model.loadingError.collectAsState()
 
     Column {
       Greeting()
+      if (showLoadingInProgress) {
+        Text(text = "...", color = Blue)
+        Text(text = "\uD83D\uDD04", color = Blue)
+        Text(text = "...", color = Blue)
+      }
       downloads?.let { TimelineView("Downloads", it) }
       uniqueIPs?.let { TimelineView("Unique IPs", it) }
       loadingError?.let {
         Text(text = "Failed to check downloads statistics: $loadingError", color = Red)
+      }
+      if (showRefreshButton) {
+        Button(onClick = { model.refresh() }) {
+          Text(text = "Refresh")
+        }
       }
       if (showLoginButton) {
         Button(onClick = {

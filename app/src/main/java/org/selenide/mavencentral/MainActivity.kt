@@ -56,14 +56,16 @@ class MainActivity : ComponentActivity() {
         Text(text = "\uD83D\uDD04", color = Blue)
         Text(text = "...", color = Blue)
       }
-      downloads?.let { TimelineView("Downloads", it) }
-      uniqueIPs?.let { TimelineView("Unique IPs", it) }
-      loadingError?.let {
-        Text(text = "Failed to check downloads statistics: $loadingError", color = Red)
-      }
-      if (showRefreshButton) {
-        Button(onClick = { model.refresh() }) {
-          Text(text = "Refresh")
+      else {
+        downloads?.let { TimelineView("Downloads", it) }
+        uniqueIPs?.let { TimelineView("Unique IPs", it) }
+        loadingError?.let {
+          Text(text = "Failed to check downloads statistics: $loadingError", color = Red)
+        }
+        if (showRefreshButton) {
+          Button(onClick = { model.refresh() }) {
+            Text(text = "Refresh")
+          }
         }
       }
       if (showLoginButton) {
